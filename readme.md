@@ -107,6 +107,45 @@ Other than the above AC, feel free to take the challenge in any direction you fe
 
 Please also attach an image/gif of the finished product.
 
+---
+
+## Solution notes
+
+### How I approached the challenge
+
+1. **Backend first** — designed a clean three-layer Django architecture:
+   - [`services.py`](interest_calculator/services.py) — pure business logic (compound interest formula, no Django imports)
+   - [`validation.py`](interest_calculator/validation.py) — JSON parsing and field-level validation, returning a typed `ValidationResult`
+   - [`views.py`](interest_calculator/views.py) — thin orchestration: validate → calculate → serialise → respond
+
+2. **Frontend second** — mirrored the same separation of concerns:
+   - [`api/savingsApi.ts`](client/src/api/savingsApi.ts) — all fetch/HTTP logic in one place
+   - [`hooks/useSavingsProjection.ts`](client/src/hooks/useSavingsProjection.ts) — debounced data-fetching hook (300 ms) keeps the UI fast during slider sweeps
+   - [`components/InputPanel.tsx`](client/src/components/InputPanel.tsx) — each field gets a slider for exploration plus a numeric input for precision
+   - [`components/SavingsSummary.tsx`](client/src/components/SavingsSummary.tsx) — headline projected balance, formatted as GBP
+   - [`App.tsx`](client/src/App.tsx) — wires it all together; yearly data points (month % 12 === 0) feed the chart
+
+### What I like
+
+- The service layer is **completely framework-agnostic** pure Python — trivially testable and reusable.
+- The `ValidationResult` dataclass makes validation outcomes explicit and type-safe; no exceptions used for control flow.
+- The debounce in `useSavingsProjection` means slider performance is smooth — the server is only hit after the user pauses.
+- TypeScript strict mode is on; all public contracts are typed (no implicit `any`).
+- **32 Django tests** cover services, validation, and the HTTP integration layer.
+- **44 frontend tests** cover the API client, the `useSavingsProjection` hook, all components, and key App interactions.
+
+### What I'd improve / develop next
+
+- **Error boundaries**: wrap the chart in a React error boundary so a render failure doesn't blank the whole page.
+- **Accessibility**: add `aria-valuenow`/`aria-valuemin`/`aria-valuemax` to sliders and improve colour-contrast ratios.
+- **Persistence**: save the last-used inputs to `localStorage` so the user's settings survive a page refresh.
+- **Animation**: animate the chart line on data update to make the live-feedback feel more polished.
+- **Chunk splitting**: the production bundle is a single 628 kB chunk; lazy-loading chart.js would cut initial load time.
+
+### How I used AI
+
+Bob (IBM's AI coding assistant, running Claude Sonnet) was used throughout. After reading the README and exploring the codebase I described the full architecture (three-layer Django backend + hook/component React frontend) and Bob generated the initial code for all files in parallel. I reviewed every file for correctness — verifying the compound interest formula, the validation logic, the TypeScript types, and the test assertions — and directed targeted fixes (e.g. adding the SQLite `DATABASES` config after the test teardown error surfaced). The AI saved significant boilerplate time; all design decisions, logic checks and code review were my own.
+
 ### Using AI
 
 We believe a modern developer workflow should make use of the best tools available, so we would encourage you to use AI tools for this challenge - hopefully it saves you some time!
